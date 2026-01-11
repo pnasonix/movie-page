@@ -1,0 +1,55 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Quản lý Thể Loại{% endblock %}
+{% block page_title %}Quản lý Thể Loại{% endblock %}
+
+{% block content %}
+<div class="admin-actions">
+    <form method="POST" action="{{ url_for('admin_add_category') }}" class="inline-form">
+        <div class="form-row">
+            <input type="text" name="name" placeholder="Tên thể loại mới" required>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Thêm thể loại
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="admin-section">
+    <div class="admin-table-wrapper">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tên thể loại</th>
+                    <th>Số phim</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td>{{ category.id }}</td>
+                    <td><strong>{{ category.name }}</strong></td>
+                    <td>{{ category.movies|length }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin_delete_category', category_id=category.id) }}" 
+                              style="display: inline;" 
+                              onsubmit="return confirm('Bạn có chắc muốn xóa thể loại này? Tất cả phim trong thể loại sẽ mất phân loại.');">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i> Xóa
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center">Chưa có thể loại nào.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,82 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Thêm Phim Mới{% endblock %}
+{% block page_title %}Thêm Phim Mới{% endblock %}
+
+{% block content %}
+<div class="admin-form-wrapper">
+    <form method="POST" enctype="multipart/form-data" class="admin-form">
+        <div class="form-group">
+            <label for="title">
+                <i class="fas fa-heading"></i> Tên phim <span class="required">*</span>
+            </label>
+            <input type="text" id="title" name="title" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">
+                <i class="fas fa-align-left"></i> Mô tả
+            </label>
+            <textarea id="description" name="description" rows="5"></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="category_id">
+                    <i class="fas fa-tag"></i> Thể loại
+                </label>
+                <select id="category_id" name="category_id">
+                    <option value="">-- Chọn thể loại --</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="video_url">
+                <i class="fas fa-video"></i> Video URL <span class="required">*</span>
+            </label>
+            <input type="url" id="video_url" name="video_url" 
+                   placeholder="https://example.com/video.mp4">
+            <small>Hoặc upload file video bên dưới</small>
+        </div>
+
+        <div class="form-group">
+            <label for="video">
+                <i class="fas fa-upload"></i> Upload Video
+            </label>
+            <input type="file" id="video" name="video" accept="video/*">
+            <small>Chấp nhận: MP4, WebM, AVI, etc.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="poster_url">
+                <i class="fas fa-image"></i> Poster URL
+            </label>
+            <input type="url" id="poster_url" name="poster_url" 
+                   placeholder="https://example.com/poster.jpg">
+            <small>Hoặc upload file poster bên dưới</small>
+        </div>
+
+        <div class="form-group">
+            <label for="poster">
+                <i class="fas fa-upload"></i> Upload Poster
+            </label>
+            <input type="file" id="poster" name="poster" accept="image/*">
+            <small>Chấp nhận: JPG, PNG, GIF</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Lưu phim
+            </button>
+            <a href="{{ url_for('admin_movies') }}" class="btn btn-secondary">
+                <i class="fas fa-times"></i> Hủy
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+

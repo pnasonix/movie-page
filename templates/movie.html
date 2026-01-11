@@ -1,0 +1,616 @@
+{% extends "base.html" %}
+
+{% block title %}Xem: {{ movie.title }} - gporn.me{% endblock %}
+
+{% block content %}
+<div class="movie-detail-container">
+    <div class="container movie-page-layout">
+        <!-- Video Player và Tabs Section -->
+        <div class="movie-player-section">
+            <!-- Video Player (Bên trái) -->
+            <div class="video-player-container">
+                <div class="video-player-wrapper{% if not movie.video_url %} login-required{% endif %}">
+                    {% if movie.video_url %}
+                    <video id="videoPlayer" class="video-player" controls playsinline>
+                        <source src="{{ movie.video_url }}" type="video/mp4">
+                        Trình duyệt của bạn không hỗ trợ video.
+                    </video>
+                    {% else %}
+                    <div class="login-prompt">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Video không khả dụng</h3>
+                        <p>Phim này chưa có nguồn video hoặc liên kết không hợp lệ.</p>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">Quay về trang chủ</a>
+                    </div>
+                    {% endif %}
+                </div>
+                <!-- Tên phim ngay dưới video player -->
+                <h1 class="movie-title-inline">{{ movie.title }}</h1>
+                <!-- Nút thích và chia sẻ -->
+                <div class="movie-meta-actions-inline">
+                    <div class="movie-actions">
+                        {% if current_user.is_authenticated %}
+                        <button class="action-btn like-btn {% if is_favorite %}liked{% endif %}" data-movie-id="{{ movie.id }}">
+                            <i class="{% if is_favorite %}fas{% else %}far{% endif %} fa-heart"></i>
+                            <span>{% if is_favorite %}Đã thích{% else %}Thích{% endif %}</span>
+                        </button>
+                        {% else %}
+						<a class="action-btn like-btn" href="{{ url_for('login') }}" onclick="alert('Vui lòng đăng nhập để thích phim!')">
+                            <i class="far fa-heart"></i>
+                            <span>Thích</span>
+						</a>
+                        {% endif %}
+                        <button class="action-btn share-btn" onclick="shareMovie()">
+                            <i class="fas fa-share-alt"></i>
+                            <span>Chia sẻ</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+			<!-- Related Section (Bên phải) -->
+            <div class="movie-tabs-container">
+                <div class="tabs-content">
+                    {% if show_episodes %}
+                    <div class="tab-pane active" id="episodes-tab">
+                        <div class="episodes-list">
+                            {# Episodes will be listed here when episodes feature is implemented #}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="tab-pane active" id="related-tab">
+                        {% if related_movies %}
+                        <div class="related-movies-list">
+                            {% for related_movie in related_movies %}
+                            <a href="{{ url_for('movie', movie_id=related_movie.id) }}" class="related-movie-item">
+                                <div class="related-movie-poster">
+                                    <img src="{{ related_movie.poster_url or 'https://via.placeholder.com/120x180?text=No+Image' }}" alt="{{ related_movie.title }}">
+                                    <div class="related-movie-overlay">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                </div>
+                                <div class="related-movie-info">
+                                    <h4>{{ related_movie.title }}</h4>
+                                    {% if related_movie.category %}
+                                    <span class="related-movie-category">{{ related_movie.category.name }}</span>
+                                    {% endif %}
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-film"></i>
+                            <p>Chưa có phim liên quan</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movie Info Section (Bên dưới video player, chỉ nằm trong phần trái) -->
+        <div class="movie-info-wrapper">
+            <div class="movie-info-section">
+                <h1 class="movie-title">{{ movie.title }}</h1>
+
+                <!-- Movie Description -->
+                {% if movie.description %}
+                <div class="movie-description-wrapper">
+                    {% if movie.category %}
+                    <a href="{{ url_for('category_movies', category_id=movie.category.id) }}" class="movie-category-badge">
+                        <i class="fas fa-tag"></i> {{ movie.category.name }}
+                    </a>
+                    {% endif %}
+                    <div class="movie-description">
+                        <p class="description-text {% if movie.description|length > 200 %}truncated{% endif %}">
+                            {{ movie.description }}
+                        </p>
+                        {% if movie.description|length > 200 %}
+                        <button class="read-more-btn" onclick="toggleDescription()">
+                            <span class="read-more-text">...xem thêm</span>
+                            <span class="read-less-text" style="display: none;">...thu gọn</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Comments Section -->
+                <div class="comments-section">
+                    <h3>
+                        <i class="fas fa-comments"></i> Bình luận
+                        <span class="comments-count">(0)</span>
+                    </h3>
+                    
+                    {% if current_user.is_authenticated %}
+                    <div class="comment-form">
+						<form id="commentForm" class="ytc-compose">
+							<div class="ytc-compose-avatar">
+								{% if current_user.avatar_url %}
+								<img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}">
+								{% else %}
+								<i class="fas fa-user-circle"></i>
+								{% endif %}
+							</div>
+							<div class="ytc-compose-main">
+                                <textarea 
+                                    id="commentText" 
+									class="ytc-compose-input" 
+									placeholder="Viết bình luận..."
+									rows="2"
+                                ></textarea>
+								<div class="ytc-compose-actions">
+									<button type="button" class="btn btn-secondary btn-compact ytc-cancel">Hủy</button>
+									<button type="submit" class="btn btn-primary btn-compact ytc-send">
+										<i class="fas fa-paper-plane"></i> Gửi
+									</button>
+								</div>
+                            </div>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="comment-login-prompt">
+                        <p>Vui lòng <a href="{{ url_for('login') }}">đăng nhập</a> để bình luận</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="comments-list" id="commentsList">
+                        <!-- Comments will be loaded here -->
+                        <div class="empty-comments">
+                            <i class="fas fa-comment-slash"></i>
+                            <p>Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Meta data for JS (tránh chèn Jinja trực tiếp vào JS) -->
+<div id="movieMeta"
+	data-movie-id="{{ movie.id }}"
+	data-last-position="{{ last_position or 0 }}"
+	data-auth="{{ 'true' if current_user.is_authenticated else 'false' }}"
+	data-save-watch-url="{{ url_for('save_watch_position') }}"
+	data-toggle-like-url="{{ url_for('toggle_like') }}"
+	data-comments-url="{{ url_for('get_comments') }}"
+	data-delete-comment-url="{{ url_for('delete_comment', comment_id=0) }}"
+	data-is-admin="{{ 'true' if current_user.is_admin else 'false' }}"
+	data-index-url="{{ url_for('index') }}"
+	style="display:none;"></div>
+
+<script>
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.dataset.tab;
+            
+            // Update active tab button
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Update active tab pane
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+        });
+    });
+
+	// Comments
+	(function initComments() {
+		const meta = document.getElementById('movieMeta');
+		const commentsUrl = meta?.dataset.commentsUrl || '/comments';
+		const mId = parseInt(meta?.dataset.movieId || '0', 10);
+		const listEl = document.getElementById('commentsList');
+		const countEl = document.querySelector('.comments-count');
+		function fmtTime(iso) {
+			try {
+				const d = new Date(iso);
+				return d.toLocaleString();
+			} catch { return ''; }
+		}
+		function render(comments) {
+			if (!listEl) return;
+			listEl.innerHTML = '';
+			if (!comments || comments.length === 0) {
+				const empty = document.createElement('div');
+				empty.className = 'empty-comments';
+				empty.innerHTML = '<i class="fas fa-comment-slash"></i><p>Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>';
+				listEl.appendChild(empty);
+			} else {
+				comments.forEach(item => {
+					const row = document.createElement('div');
+					row.className = 'ytc-item';
+					const header = document.createElement('div');
+					header.className = 'ytc-header';
+					const avatar = document.createElement('div');
+					avatar.className = 'ytc-avatar';
+					if (item.user?.avatar_url) {
+						const img = document.createElement('img');
+						img.src = item.user.avatar_url;
+						img.alt = item.user.username || '';
+						avatar.appendChild(img);
+					} else {
+						const i = document.createElement('i');
+						i.className = 'fas fa-user-circle';
+						avatar.appendChild(i);
+					}
+					const left = document.createElement('div');
+					left.className = 'ytc-header-left';
+					const name = document.createElement('strong');
+					name.className = 'ytc-name';
+					name.textContent = item.user?.username || 'Người dùng';
+					const time = document.createElement('span');
+					time.className = 'ytc-time';
+					time.textContent = ' · ' + fmtTime(item.created_at);
+					left.appendChild(avatar);
+					left.appendChild(name);
+					left.appendChild(time);
+					header.appendChild(left);
+					// Admin delete
+					const isAdmin = (meta?.dataset.isAdmin === 'true');
+					if (isAdmin) {
+						const delBtn = document.createElement('button');
+						delBtn.className = 'ytc-action-btn';
+						delBtn.textContent = 'Xóa';
+						delBtn.addEventListener('click', async (e) => {
+							e.preventDefault();
+							if (!confirm('Xóa bình luận này?')) return;
+							try {
+								const base = meta?.dataset.deleteCommentUrl || '/comments/0';
+								const url = base.replace(/0$/, String(item.id));
+								const resp = await fetch(url, { method: 'DELETE' });
+								const data = await resp.json();
+								if (data.success) {
+									await load();
+								} else {
+									alert(data.error || 'Không thể xóa');
+								}
+							} catch (err) {
+								alert('Không thể xóa');
+							}
+						});
+						header.appendChild(delBtn);
+					}
+					const body = document.createElement('div');
+					body.className = 'ytc-text';
+					const p = document.createElement('p');
+					p.className = 'ytc-text-p';
+					p.textContent = item.content || '';
+					body.appendChild(p);
+					row.appendChild(header);
+					row.appendChild(body);
+					listEl.appendChild(row);
+				});
+			}
+			if (countEl) countEl.textContent = `(${comments?.length || 0})`;
+		}
+		async function load() {
+			try {
+				const resp = await fetch(`${commentsUrl}?movie_id=${encodeURIComponent(mId)}`);
+				const data = await resp.json();
+				if (data.success) render(data.comments);
+			} catch (e) { /* ignore */ }
+		}
+		// Submit
+		const form = document.getElementById('commentForm');
+		if (form) {
+			// Compose show/hide actions
+			const textarea = document.getElementById('commentText');
+			const cancelBtn = form.querySelector('.ytc-cancel');
+			function updateActive() {
+				const hasText = (textarea?.value || '').trim().length > 0;
+				if (hasText) {
+					form.classList.add('active');
+				} else {
+					form.classList.remove('active');
+				}
+			}
+			textarea?.addEventListener('focus', () => form.classList.add('active'));
+			textarea?.addEventListener('input', updateActive);
+			textarea?.addEventListener('blur', () => {
+				// Delay to allow click on buttons
+				setTimeout(() => {
+					if (!((textarea?.value || '').trim().length > 0)) {
+						form.classList.remove('active');
+					}
+				}, 150);
+			});
+			cancelBtn?.addEventListener('click', (e) => {
+				e.preventDefault();
+				if (textarea) textarea.value = '';
+				form.classList.remove('active');
+			});
+			updateActive();
+			form.addEventListener('submit', async (e) => {
+				e.preventDefault();
+				const content = (textarea?.value || '').trim();
+				if (!content) return;
+				try {
+					const resp = await fetch(commentsUrl, {
+						method: 'POST',
+						headers: {'Content-Type': 'application/json'},
+						body: JSON.stringify({ movie_id: mId, content })
+					});
+					const data = await resp.json();
+					if (data.success) {
+						if (textarea) textarea.value = '';
+						form.classList.remove('active');
+						await load();
+					} else {
+						alert(data.error || 'Không thể gửi bình luận');
+					}
+				} catch (err) {
+					alert('Không thể gửi bình luận');
+				}
+			});
+		}
+		load();
+	})();
+    // Episode selection (for future implementation)
+    document.querySelectorAll('.episode-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const videoUrl = item.dataset.episodeUrl;
+            const videoPlayer = document.getElementById('videoPlayer');
+            if (videoPlayer) {
+                videoPlayer.src = videoUrl;
+                videoPlayer.load();
+                videoPlayer.play();
+            }
+        });
+    });
+
+    // Video player position saving (chỉ lưu nếu đã đăng nhập)
+    const video = document.getElementById('videoPlayer');
+	const meta = document.getElementById('movieMeta');
+	const movieId = parseInt(meta?.dataset.movieId || '0', 10);
+	const lastPosition = parseInt(meta?.dataset.lastPosition || '0', 10);
+	const isAuthenticated = (meta?.dataset.auth === 'true');
+
+    if (video && lastPosition > 0) {
+        const applyResume = () => {
+            try {
+                const safePosition = Math.max(0, Math.floor(lastPosition));
+                // Tránh nhảy tới gần cuối cùng gây auto-end
+                const maxPosition = (isFinite(video.duration) && video.duration)
+                    ? Math.max(0, Math.min(safePosition, Math.floor(video.duration) - 3))
+                    : safePosition;
+                video.currentTime = maxPosition;
+            } catch (e) {}
+        };
+        if (video.readyState >= 1) {
+            applyResume();
+        } else {
+            video.addEventListener('loadedmetadata', applyResume, { once: true });
+        }
+    }
+
+    if (video && isAuthenticated) {
+        let saveInterval = setInterval(() => {
+            if (!video.paused) {
+                saveWatchPosition(video.currentTime);
+            }
+        }, 5000);
+
+        video.addEventListener('pause', () => {
+            saveWatchPosition(video.currentTime);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            saveWatchPosition(video.currentTime);
+            clearInterval(saveInterval);
+        });
+        
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                saveWatchPosition(video.currentTime);
+            }
+        });
+    }
+    
+    // Hiển thị thông báo khi video lỗi tải
+		if (video) {
+        video.addEventListener('error', () => {
+            const wrapper = document.querySelector('.video-player-wrapper');
+            if (!wrapper) return;
+            wrapper.classList.add('login-required');
+				const indexUrl = document.getElementById('movieMeta')?.dataset.indexUrl || '/';
+				wrapper.innerHTML =
+                '<div class="login-prompt">'
+                + '<i class="fas fa-exclamation-triangle"></i>'
+                + '<h3>Không thể tải video</h3>'
+                + '<p>Vui lòng thử lại sau, hoặc xem phim khác.</p>'
+					+ '<a href="' + indexUrl + '" class="btn btn-primary">Quay về trang chủ</a>'
+                + '</div>';
+        }, { once: true });
+    }
+
+    // Mobile video player fixed positioning
+    function setupMobileVideoPlayer() {
+        const isMobile = window.innerWidth <= 768;
+        const layout = document.querySelector('.movie-page-layout');
+        const navbar = document.querySelector('.navbar');
+        
+        if (!isMobile) {
+            // Reset on desktop
+            if (layout) {
+                layout.classList.remove('mobile-video-fixed');
+            }
+            document.documentElement.style.removeProperty('--navbar-height');
+            document.documentElement.style.removeProperty('--mobile-video-height');
+            document.documentElement.style.removeProperty('--mobile-content-padding');
+            document.body.style.paddingTop = '';
+            if (navbar) {
+                navbar.style.position = '';
+            }
+            return;
+        }
+        
+        const video = document.getElementById('videoPlayer');
+        if (!video || !layout) return;
+
+        // Calculate navbar height and set body padding
+        if (navbar) {
+            const navbarHeight = navbar.offsetHeight;
+            document.documentElement.style.setProperty('--navbar-height', navbarHeight + 'px');
+            // Also set body padding-top for fixed navbar
+            document.body.style.paddingTop = navbarHeight + 'px';
+            // Ensure navbar is fixed
+            navbar.style.position = 'fixed';
+            navbar.style.top = '0';
+            navbar.style.left = '0';
+            navbar.style.right = '0';
+            navbar.style.width = '100%';
+            navbar.style.zIndex = '1001';
+        }
+
+        // Tính toán chính xác chiều cao video container (16:9 cố định) và đặt padding-top
+        function calculateVideoPadding() {
+            // Container luôn có aspect ratio 16:9 cố định
+            const containerWidth = window.innerWidth;
+            const aspectRatio = 9 / 16; // 16:9 = width/height, nên height/width = 9/16
+            const calculatedHeight = containerWidth * aspectRatio;
+            
+            // Tính padding-top: navbar height + video container height + spacing (20px cho title)
+            const navbarHeight = navbar ? navbar.offsetHeight : 60;
+            const spacing = 20; // Khoảng cách 20px giữa video và title
+            const totalPadding = navbarHeight + calculatedHeight + spacing;
+            
+            // Cập nhật CSS variable
+            document.documentElement.style.setProperty('--mobile-video-height', calculatedHeight + 'px');
+            document.documentElement.style.setProperty('--mobile-content-padding', totalPadding + 'px');
+        }
+
+        // Thêm class để áp dụng CSS
+        layout.classList.add('mobile-video-fixed');
+        
+        // Tính toán padding ngay lập tức (không cần đợi video load)
+        calculateVideoPadding();
+        
+        // Cập nhật lại khi resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (window.innerWidth <= 768) {
+                    calculateVideoPadding();
+                    if (navbar) {
+                        const navbarHeight = navbar.offsetHeight;
+                        document.documentElement.style.setProperty('--navbar-height', navbarHeight + 'px');
+                        document.body.style.paddingTop = navbarHeight + 'px';
+                    }
+                }
+            }, 100);
+        });
+    }
+
+    // Initialize on page load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupMobileVideoPlayer);
+    } else {
+        setupMobileVideoPlayer();
+    }
+
+    function saveWatchPosition(position) {
+        if (!isAuthenticated) return;
+		const saveWatchUrl = meta?.dataset.saveWatchUrl || '/save_watch_position';
+		fetch(saveWatchUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                movie_id: movieId,
+                position: Math.floor(position)
+            })
+        });
+    }
+
+    // Description read more/less
+    function toggleDescription() {
+        const descText = document.querySelector('.description-text');
+        const readMoreText = document.querySelector('.read-more-text');
+        const readLessText = document.querySelector('.read-less-text');
+        
+        if (descText.classList.contains('truncated')) {
+            descText.classList.remove('truncated');
+            readMoreText.style.display = 'none';
+            readLessText.style.display = 'inline';
+        } else {
+            descText.classList.add('truncated');
+            readMoreText.style.display = 'inline';
+            readLessText.style.display = 'none';
+        }
+    }
+
+    // Share movie
+    function shareMovie() {
+        if (navigator.share) {
+            navigator.share({
+                title: '{{ movie.title }}',
+                text: '{{ movie.description[:100] if movie.description else "" }}',
+                url: window.location.href
+            });
+        } else {
+            // Fallback: copy to clipboard
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert('Đã sao chép link vào clipboard!');
+            });
+        }
+    }
+
+    // Like button
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        const movieId = btn.dataset.movieId;
+        if (!movieId) return;
+        
+        btn.addEventListener('click', async () => {
+			const isAuthenticated = (document.getElementById('movieMeta')?.dataset.auth === 'true');
+            if (!isAuthenticated) {
+                alert('Vui lòng đăng nhập để thích phim!');
+                return;
+            }
+            
+            try {
+				const toggleLikeUrl = document.getElementById('movieMeta')?.dataset.toggleLikeUrl || '/toggle_like';
+				const response = await fetch(toggleLikeUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        movie_id: parseInt(movieId)
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    const icon = btn.querySelector('i');
+                    const span = btn.querySelector('span');
+                    
+                    if (data.is_favorite) {
+                        btn.classList.add('liked');
+                        icon.classList.remove('far');
+                        icon.classList.add('fas');
+                        span.textContent = 'Đã thích';
+                    } else {
+                        btn.classList.remove('liked');
+                        icon.classList.remove('fas');
+                        icon.classList.add('far');
+                        span.textContent = 'Thích';
+                    }
+                } else {
+                    alert('Có lỗi xảy ra: ' + (data.error || 'Không thể cập nhật'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra khi thích phim!');
+            }
+        });
+    });
+
+    // (đã thay bằng logic bình luận thực tế ở trên)
+</script>
+{% endblock %}

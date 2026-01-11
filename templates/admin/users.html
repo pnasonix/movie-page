@@ -1,0 +1,85 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Quản lý người dùng{% endblock %}
+{% block page_title %}<i class="fas fa-users"></i> Quản lý người dùng{% endblock %}
+
+{% block content %}
+<div class="admin-section">
+    <div class="section-header">
+        <h2>Tất cả người dùng</h2>
+        <div class="section-stats">
+            <span class="stat-badge">
+                <i class="fas fa-users"></i> Tổng: {{ users|length }} người dùng
+            </span>
+        </div>
+    </div>
+    
+    <div class="admin-table-wrapper">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Avatar</th>
+                    <th>Tên người dùng</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Ngày đăng ký</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>
+                        {% if user.avatar_url %}
+                        <img src="{{ user.avatar_url }}" alt="{{ user.username }}" class="user-avatar-small">
+                        {% else %}
+                        <div class="user-avatar-placeholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td><strong>{{ user.username }}</strong></td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        {% if user.is_admin %}
+                        <span class="badge badge-admin">
+                            <i class="fas fa-crown"></i> Admin
+                        </span>
+                        {% else %}
+                        <span class="badge badge-user">
+                            <i class="fas fa-user"></i> User
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <form method="POST" action="{{ url_for('admin_toggle_admin', user_id=user.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-secondary" 
+                                        onclick="return confirm('Bạn có chắc muốn thay đổi quyền của {{ user.username }}?')">
+                                    {% if user.is_admin %}
+                                    <i class="fas fa-user-slash"></i> Bỏ Admin
+                                    {% else %}
+                                    <i class="fas fa-user-shield"></i> Thêm Admin
+                                    {% endif %}
+                                </button>
+                            </form>
+                            {% if user.id != current_user.id %}
+                            <form method="POST" action="{{ url_for('admin_delete_user', user_id=user.id) }}" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-danger" 
+                                        onclick="return confirm('Bạn có chắc muốn xóa người dùng {{ user.username }}? Hành động này không thể hoàn tác!')">
+                                    <i class="fas fa-trash"></i> Xóa
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

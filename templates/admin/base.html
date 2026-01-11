@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Panel{% endblock %} - gporn.me</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=54.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <!-- Mobile menu button -->
+            <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <!-- Brand (bên trái) -->
+            <div class="nav-brand">
+                <a href="{{ url_for('index') }}">
+                    <i class="fas fa-film"></i> XemPhim
+                </a>
+            </div>
+
+            <!-- Desktop Navigation (giữa) -->
+            <div class="nav-menu-desktop">
+                <a href="{{ url_for('index') }}" class="nav-link">
+                    <i class="fas fa-home"></i> Trang chủ
+                </a>
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="{{ url_for('admin_movies') }}" class="nav-link">
+                    <i class="fas fa-video"></i> Phim
+                </a>
+                <a href="{{ url_for('admin_categories') }}" class="nav-link">
+                    <i class="fas fa-tags"></i> Thể loại
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="nav-link">
+                    <i class="fas fa-users"></i> Người dùng
+                </a>
+            </div>
+
+            <!-- Right side: User menu -->
+            <div class="nav-right">
+                <div class="user-menu">
+                    <div class="user-avatar" id="userAvatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="user-info">
+                            <strong>{{ current_user.username }}</strong>
+                            <span class="user-badge">Admin</span>
+                        </div>
+                        <a href="{{ url_for('profile') }}" class="dropdown-item">
+                            <i class="fas fa-user"></i> Hồ sơ
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="dropdown-item">
+                            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile search box -->
+        <div class="mobile-search" id="mobileSearch" style="display: none !important;">
+        </div>
+    </nav>
+
+    <!-- Mobile sidebar -->
+    <div class="mobile-sidebar" id="mobileSidebar">
+        <div class="sidebar-header">
+            <h3>Menu Admin</h3>
+            <button class="sidebar-close" id="sidebarClose">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="sidebar-content">
+            <a href="{{ url_for('index') }}" class="sidebar-item">
+                <i class="fas fa-home"></i> Trang chủ
+            </a>
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">
+                    <i class="fas fa-cog"></i> Admin
+                </div>
+                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-item">
+                    <i class="fas fa-tachometer-alt"></i> Dashboard
+                </a>
+                <a href="{{ url_for('admin_movies') }}" class="sidebar-item">
+                    <i class="fas fa-video"></i> Phim
+                </a>
+                <a href="{{ url_for('admin_categories') }}" class="sidebar-item">
+                    <i class="fas fa-tags"></i> Thể loại
+                </a>
+                <a href="{{ url_for('admin_users') }}" class="sidebar-item">
+                    <i class="fas fa-users"></i> Người dùng
+                </a>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-section-title">
+                    <i class="fas fa-user"></i> Tài khoản
+                </div>
+                <a href="{{ url_for('profile') }}" class="sidebar-item">
+                    <i class="fas fa-user"></i> Hồ sơ
+                </a>
+                <a href="{{ url_for('logout') }}" class="sidebar-item">
+                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message flash-{{ category }}">
+                        <span>{{ message }}</span>
+                        <button onclick="this.parentElement.remove()">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <main class="main-content admin-content">
+        <div class="container">
+            <div class="admin-header">
+                <h1>{% block page_title %}Admin Panel{% endblock %}</h1>
+            </div>
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+

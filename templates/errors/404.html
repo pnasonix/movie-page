@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Không tìm thấy trang - gporn.me{% endblock %}
+
+{% block content %}
+<div class="container">
+	<div class="empty-state">
+		<i class="fas fa-search"></i>
+		<h3>Không tìm thấy trang</h3>
+		<p>Đường dẫn bạn truy cập không tồn tại hoặc đã bị thay đổi.</p>
+		<a href="{{ url_for('index') }}" class="btn btn-primary">
+			<i class="fas fa-home"></i> Về trang chủ
+		</a>
+	</div>
+	</div>
+{% endblock %}
+

@@ -1,0 +1,79 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="admin-stats">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-video"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_movies }}</h3>
+            <p>Tổng số phim</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_users }}</h3>
+            <p>Tổng số người dùng</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-eye"></i>
+        </div>
+        <div class="stat-info">
+            <h3>{{ total_views }}</h3>
+            <p>Tổng lượt xem</p>
+        </div>
+    </div>
+</div>
+
+<div class="admin-section">
+    <div class="section-header">
+        <h2><i class="fas fa-clock"></i> Phim Mới Nhất</h2>
+        <a href="{{ url_for('admin_movies') }}" class="btn btn-secondary">Xem tất cả</a>
+    </div>
+    <div class="admin-table-wrapper">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Poster</th>
+                    <th>Tên phim</th>
+                    <th>Thể loại</th>
+                    <th>Lượt xem</th>
+                    <th>Ngày tạo</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movie in recent_movies %}
+                <tr>
+                    <td>{{ movie.id }}</td>
+                    <td>
+                        <img src="{{ movie.poster_url or 'https://via.placeholder.com/50x75?text=No+Image' }}" 
+                             alt="{{ movie.title }}" class="table-poster">
+                    </td>
+                    <td>{{ movie.title }}</td>
+                    <td>{{ movie.category.name if movie.category else 'N/A' }}</td>
+                    <td>{{ movie.views }}</td>
+                    <td>{{ movie.created_at.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        <a href="{{ url_for('admin_edit_movie', movie_id=movie.id) }}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-edit"></i> Sửa
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+

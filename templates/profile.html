@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+
+{% block title %}Hồ sơ - {{ current_user.username }}{% endblock %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="container">
+        <div class="profile-layout">
+            <!-- Cột trái: Tabs -->
+            <div class="profile-sidebar">
+                <div class="profile-tabs">
+                    <button class="profile-tab-btn active" data-tab="info">
+                        <i class="fas fa-user"></i>
+                        <span>Thông tin</span>
+                    </button>
+                    <button class="profile-tab-btn" data-tab="security">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Bảo mật</span>
+                    </button>
+                    <button class="profile-tab-btn" data-tab="history">
+                        <i class="fas fa-history"></i>
+                        <span>Lịch sử xem</span>
+                    </button>
+                    <button class="profile-tab-btn" data-tab="playlist">
+                        <i class="fas fa-list"></i>
+                        <span>Playlist</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cột phải: Nội dung tabs -->
+            <div class="profile-content">
+                <!-- Tab: Thông tin người dùng -->
+                <div class="profile-tab-pane active" id="info-tab">
+					<div class="profile-info-update-card">
+                            <div class="profile-header-compact">
+                                <div class="profile-avatar-compact">
+                                    {% if current_user.avatar_url %}
+                                    <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}" class="profile-avatar-img">
+                                    {% else %}
+                                    <i class="fas fa-user-circle"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="profile-name-compact">
+                                    <h2>{{ current_user.username }}</h2>
+                                    {% if current_user.is_admin %}
+                                    <span class="admin-badge">
+                                        <i class="fas fa-crown"></i> Admin
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+						
+
+						<!-- Upload Avatar -->
+						<form method="POST" action="{{ url_for('upload_avatar') }}" enctype="multipart/form-data" class="profile-update-form" style="margin-bottom: 1rem;">
+							<div class="form-group">
+								<label for="avatar_file">
+									<i class="fas fa-image"></i> Tải ảnh đại diện
+								</label>
+								<input type="file" id="avatar_file" name="avatar_file" accept="image/*">
+								<small class="form-help">Hỗ trợ JPG, PNG, GIF, WEBP</small>
+                                    </div>
+							<div class="form-actions">
+								<button type="submit" class="btn btn-primary">
+									<i class="fas fa-upload"></i> Tải lên
+								</button>
+                                    </div>
+						</form>
+
+						<h3 class="profile-update-title"><i class="fas fa-edit"></i> Cập nhật thông tin</h3>
+                            <form method="POST" action="{{ url_for('update_profile') }}" class="profile-update-form">
+                                <div class="form-group">
+                                    <label for="username">
+                                        <i class="fas fa-user"></i> Tên người dùng
+                                    </label>
+                                    <input type="text" id="username" name="username" value="{{ current_user.username }}" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">
+                                        <i class="fas fa-envelope"></i> Email
+                                    </label>
+                                    <input type="email" id="email" name="email" value="{{ current_user.email }}" required>
+                                </div>
+							
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Cập nhật
+                                    </button>
+                                    <button type="reset" class="btn btn-secondary">
+                                        <i class="fas fa-undo"></i> Đặt lại
+                                    </button>
+                                </div>
+                            </form>
+                    </div>
+                </div>
+
+                <!-- Tab: Bảo mật -->
+                <div class="profile-tab-pane" id="security-tab">
+                    <div class="security-card">
+                        <div class="security-card-header">
+                            <div>
+                                <h3><i class="fas fa-key"></i> Đổi mật khẩu</h3>
+                                <p class="text-secondary">Cập nhật mật khẩu để bảo vệ tài khoản của bạn</p>
+                            </div>
+                        </div>
+                        <form id="changePasswordForm" method="POST" action="{{ url_for('change_password') }}" class="security-form">
+                            <div class="form-group">
+                                <label for="current_password">
+                                    <i class="fas fa-lock"></i> Mật khẩu hiện tại
+                                </label>
+                                <input type="password" id="current_password" name="current_password" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new_password">
+                                    <i class="fas fa-key"></i> Mật khẩu mới
+                                </label>
+                                <input type="password" id="new_password" name="new_password" required minlength="6">
+                                <small class="form-help">Mật khẩu phải có ít nhất 6 ký tự</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="confirm_password">
+                                    <i class="fas fa-check-circle"></i> Xác nhận mật khẩu mới
+                                </label>
+                                <input type="password" id="confirm_password" name="confirm_password" required minlength="6">
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Cập nhật mật khẩu
+                                </button>
+                                <button type="reset" class="btn btn-secondary">
+                                    <i class="fas fa-times"></i> Hủy
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="security-card">
+                        <div class="security-card-header">
+                            <div>
+                                <h3><i class="fas fa-shield-alt"></i> Bảo mật bổ sung</h3>
+                                <p class="text-secondary">Các tính năng bảo mật nâng cao sẽ được thêm trong tương lai</p>
+                            </div>
+                        </div>
+                        <div class="security-feature">
+                            <div class="feature-info">
+                                <h4>Xác thực hai yếu tố (2FA)</h4>
+                                <p class="text-secondary">Thêm lớp bảo mật bổ sung cho tài khoản của bạn</p>
+                            </div>
+                            <button class="btn btn-secondary" disabled>
+                                <i class="fas fa-clock"></i> Sắp có
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Lịch sử xem -->
+                <div class="profile-tab-pane" id="history-tab">
+                    {% if watch_history %}
+                    <div class="watch-history-grid">
+                        {% for history in watch_history %}
+                        {% if history.movie %}
+                        <div class="history-card">
+                            <a href="{{ url_for('movie', movie_id=history.movie.id) }}">
+                                <div class="history-poster">
+                                    <img src="{{ history.movie.poster_url or 'https://via.placeholder.com/200x300?text=No+Image' }}" alt="{{ history.movie.title }}" loading="lazy">
+                                    <div class="history-overlay">
+                                        <div class="history-progress">
+                                            {% set progress_percent = ((history.last_position / 3600) * 100) if history.last_position else 0 %}
+                                            {% if progress_percent > 100 %}
+                                                {% set progress_percent = 100 %}
+                                            {% endif %}
+                                            <div class="progress-bar" style="width: {{ progress_percent }}%"></div>
+                                        </div>
+                                        <div class="history-actions">
+                                            <i class="fas fa-play"></i>
+                                            <span class="history-time">{{ (history.last_position // 60) if history.last_position else 0 }} phút</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="history-info">
+                                    <h3>{{ history.movie.title }}</h3>
+                                    <p class="history-date">
+                                        <i class="fas fa-clock"></i> {{ history.watched_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </p>
+                                </div>
+                            </a>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-film"></i>
+                        <h3>Chưa có lịch sử xem</h3>
+                        <p>Bạn chưa xem phim nào. Hãy bắt đầu khám phá!</p>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-compass"></i> Khám phá phim
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Tab: My Playlist -->
+                <div class="profile-tab-pane" id="playlist-tab">
+                    <div class="empty-state">
+                        <i class="fas fa-list"></i>
+                        <h3>Chưa có playlist</h3>
+                        <p>Tính năng playlist sẽ được thêm trong tương lai. Bạn có thể lưu các phim yêu thích vào đây.</p>
+                        <button class="btn btn-primary" disabled>
+                            <i class="fas fa-plus"></i> Tạo playlist mới
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Tab switching
+    document.querySelectorAll('.profile-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.dataset.tab;
+            
+            // Update active tab button
+            document.querySelectorAll('.profile-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Update active tab pane
+            document.querySelectorAll('.profile-tab-pane').forEach(pane => pane.classList.remove('active'));
+            const targetPane = document.getElementById(tabName + '-tab');
+            if (targetPane) {
+                targetPane.classList.add('active');
+            }
+            
+            // Lưu tab đang mở
+            try { localStorage.setItem('profileActiveTab', tabName); } catch (e) {}
+        });
+    });
+    
+    // Khởi tạo tab theo lưu trữ trước đó
+    (function initSavedTab() {
+        try {
+            const saved = localStorage.getItem('profileActiveTab') || 'info';
+            const btn = document.querySelector(`.profile-tab-btn[data-tab="${saved}"]`);
+            const pane = document.getElementById(saved + '-tab');
+            if (btn && pane) {
+                // Reset all
+                document.querySelectorAll('.profile-tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.profile-tab-pane').forEach(p => p.classList.remove('active'));
+                // Activate saved
+                btn.classList.add('active');
+                pane.classList.add('active');
+            }
+        } catch (e) {}
+    })();
+
+    // Password form validation
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', function(e) {
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            if (newPassword !== confirmPassword) {
+                e.preventDefault();
+                alert('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+                return false;
+            }
+            
+            if (newPassword.length < 6) {
+                e.preventDefault();
+                alert('Mật khẩu phải có ít nhất 6 ký tự!');
+                return false;
+            }
+        });
+    }
+</script>
+{% endblock %}

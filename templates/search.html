@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Tìm kiếm: {{ query }} - gporn.me{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1><i class="fas fa-search"></i> Kết quả tìm kiếm</h1>
+        <p>{% if query %}Từ khóa: "{{ query }}"{% endif %}</p>
+    </div>
+
+    {% if movies %}
+    <div class="movie-grid">
+        {% for movie in movies %}
+        <div class="movie-card">
+            <a href="{{ url_for('movie', movie_id=movie.id) }}">
+                <div class="movie-poster">
+                    <img src="{{ movie.poster_url or 'https://via.placeholder.com/300x450?text=No+Image' }}" alt="{{ movie.title }}">
+                    <div class="movie-overlay">
+                        <i class="fas fa-play"></i>
+                    </div>
+                    <div class="movie-views">
+                        <i class="fas fa-eye"></i> {{ movie.views }}
+                    </div>
+                </div>
+                <div class="movie-info">
+                    <h3>{{ movie.title }}</h3>
+                    {% if movie.category %}
+                    <span class="movie-category">{{ movie.category.name }}</span>
+                    {% endif %}
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-search"></i>
+        <p>Không tìm thấy kết quả nào.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Quay về trang chủ</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
