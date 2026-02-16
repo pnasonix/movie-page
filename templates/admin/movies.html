@@ -1,27 +1,40 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Quản lý Phim{% endblock %}
-{% block page_title %}Quản lý Phim{% endblock %}
+{% block title %}Phim{% endblock %}
+{% block page_title %}Phim ({{ movies|length }}){% endblock %}
 
 {% block content %}
-<div class="admin-actions">
-    <a href="{{ url_for('admin_add_movie') }}" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Thêm phim mới
-    </a>
-	<form method="POST" action="{{ url_for('admin_bulk_delete_movies') }}" style="display:inline"
-		  onsubmit="return confirm('Bạn chắc chắn muốn xóa TẤT CẢ phim và dữ liệu liên quan? Hành động này không thể hoàn tác!');">
-		<button type="submit" class="btn btn-danger">
-			<i class="fas fa-trash"></i> Xóa tất cả
-		</button>
-	</form>
+<!-- Search Box -->
+<div class="admin-search-box">
+    <div class="admin-search-input-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" id="movieSearchInput" placeholder="Tìm kiếm phim..." autocomplete="off">
+        <button class="admin-search-clear" id="searchClear" style="display:none;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="admin-search-results" id="searchResults"></div>
 </div>
 
-<div class="admin-section">
+<div class="admin-actions">
+    <a href="{{ url_for('admin_add_movie') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Thêm phim
+    </a>
+    <button class="btn btn-secondary" id="toggleSortBtn" onclick="toggleSortMode()">
+        <i class="fas fa-sort"></i> Sắp xếp
+    </button>
+    <button class="btn btn-success" id="saveOrderBtn" onclick="saveOrder()" style="display:none;">
+        <i class="fas fa-save"></i> Lưu thứ tự
+    </button>
+</div>
+
+<!-- Desktop Table View -->
+<div class="admin-section desktop-table-view">
     <div class="admin-table-wrapper">
-        <table class="admin-table">
+        <table class="admin-table" id="moviesTable">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th class="drag-handle-col" style="display:none;"></th>
                     <th>Poster</th>
                     <th>Tên phim</th>
                     <th>Thể loại</th>
@@ -30,14 +43,12 @@
                     <th>Thao tác</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="moviesTableBody">
                 {% for movie in movies %}
-				<tr data-movie-id="{{ movie.id }}"
-					data-video-url="{{ movie.video_url or '' | e }}"
-					data-poster-url="{{ movie.poster_url or '' | e }}"
-					data-description="{{ (movie.description or '') | e }}"
-					data-category-id="{{ movie.category_id or '' }}">
-                    <td>{{ movie.id }}</td>
+				<tr data-movie-id="{{ movie.id }}" draggable="false">
+                    <td class="drag-handle-cell" style="display:none;">
+                        <i class="fas fa-grip-vertical drag-handle"></i>
+                    </td>
                     <td>
 						<img src="{{ movie.poster_url or 'https://via.placeholder.com/120x68?text=No+Image' }}" 
                              alt="{{ movie.title }}" class="table-poster">
@@ -57,18 +68,18 @@
                     <td>{{ movie.created_at.strftime('%d/%m/%Y') }}</td>
                     <td>
                         <div class="action-buttons">
-                            <a href="{{ url_for('movie', movie_id=movie.id) }}" 
-                               class="btn btn-sm btn-secondary" target="_blank">
+                            <a href="{{ url_for('movie', url_key=movie.url_key or movie.slug or movie.id) }}" 
+                               class="btn btn-sm btn-secondary" target="_blank" title="Xem">
                                 <i class="fas fa-eye"></i>
                             </a>
                             <a href="{{ url_for('admin_edit_movie', movie_id=movie.id) }}" 
-                               class="btn btn-sm btn-primary">
+                               class="btn btn-sm btn-primary" title="Sửa">
                                 <i class="fas fa-edit"></i>
                             </a>
                             <form method="POST" action="{{ url_for('admin_delete_movie', movie_id=movie.id) }}" 
                                   style="display: inline;" 
-                                  onsubmit="return confirm('Bạn có chắc muốn xóa phim này?');">
-                                <button type="submit" class="btn btn-sm btn-danger">
+                                  onsubmit="return confirm('Xóa phim này?');">
+                                <button type="submit" class="btn btn-sm btn-danger" title="Xóa">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </form>
@@ -77,50 +88,616 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="text-center">Chưa có phim nào. <a href="{{ url_for('admin_add_movie') }}">Thêm phim đầu tiên</a></td>
+                    <td colspan="6" class="text-center">Chưa có phim nào. <a href="{{ url_for('admin_add_movie') }}">Thêm phim đầu tiên</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-<!-- Edit modal removed per request; using classic edit page -->
+
+<!-- Mobile List View -->
+<div class="mobile-movie-list" id="mobileMovieList">
+    {% for movie in movies %}
+    <div class="movie-item" data-movie-id="{{ movie.id }}" draggable="false">
+        <div class="mobile-drag-handle" style="display:none;">
+            <i class="fas fa-grip-vertical"></i>
+        </div>
+        <div class="movie-item-main">
+            <div class="movie-item-poster">
+                <img src="{{ movie.poster_url or 'https://via.placeholder.com/60x90?text=No' }}" 
+                     alt="{{ movie.title }}">
+            </div>
+            <div class="movie-item-content">
+                <div class="movie-item-title">{{ movie.title }}</div>
+                <div class="movie-item-meta">
+                    <span class="movie-item-category">{{ movie.category.name if movie.category else 'Chưa phân loại' }}</span>
+                    <span class="movie-item-views"><i class="fas fa-eye"></i> {{ movie.views }}</span>
+                </div>
+            </div>
+            <div class="movie-item-actions">
+                <button class="movie-item-menu-btn" onclick="toggleMovieMenu(this)">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="movie-item-dropdown">
+                    <a href="{{ url_for('movie', url_key=movie.url_key or movie.slug or movie.id) }}" target="_blank">
+                        <i class="fas fa-eye"></i> Xem phim
+                    </a>
+                    <a href="{{ url_for('admin_edit_movie', movie_id=movie.id) }}">
+                        <i class="fas fa-edit"></i> Chỉnh sửa
+                    </a>
+                    <button class="movie-quick-edit-btn" onclick="openQuickEdit({{ movie.id }}, '{{ movie.title | e }}', '{{ movie.category_id or '' }}')">
+                        <i class="fas fa-bolt"></i> Sửa nhanh
+                    </button>
+                    <form method="POST" action="{{ url_for('admin_delete_movie', movie_id=movie.id) }}" 
+                          onsubmit="return confirm('Xóa phim này?');">
+                        <button type="submit" class="delete-btn">
+                            <i class="fas fa-trash"></i> Xóa
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-film"></i>
+        <p>Chưa có phim nào</p>
+        <a href="{{ url_for('admin_add_movie') }}" class="btn btn-primary">Thêm phim đầu tiên</a>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Dropdown Backdrop -->
+<div class="movie-dropdown-backdrop" id="movieDropdownBackdrop" onclick="closeAllDropdowns()"></div>
+
+<!-- Quick Edit Modal -->
+<div class="quick-edit-modal" id="quickEditModal">
+    <div class="quick-edit-backdrop" onclick="closeQuickEdit()"></div>
+    <div class="quick-edit-sheet">
+        <div class="quick-edit-header">
+            <h3>Sửa nhanh</h3>
+            <button class="quick-edit-close" onclick="closeQuickEdit()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="quick-edit-body">
+            <input type="hidden" id="quickEditMovieId">
+            <div class="quick-edit-field">
+                <label>Tên phim</label>
+                <input type="text" id="quickEditTitle" placeholder="Nhập tên phim">
+            </div>
+            <div class="quick-edit-field">
+                <label>Thể loại</label>
+                <select id="quickEditCategory">
+                    <option value="">Chưa chọn</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="quick-edit-footer">
+            <button class="btn btn-secondary" onclick="closeQuickEdit()">Hủy</button>
+            <button class="btn btn-primary" onclick="saveQuickEdit()">Lưu</button>
+        </div>
+    </div>
+</div>
+
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-	const rows = document.querySelectorAll('tr[data-movie-id]');
-	function debounce(fn, t=400) {
-		let id; return (...args) => { clearTimeout(id); id = setTimeout(() => fn(...args), t); };
-	}
-	async function quickUpdate(movieId, payload) {
-		try {
-			const resp = await fetch(`{{ url_for('admin_quick_update_movie', movie_id=0) }}`.replace('0', String(movieId)), {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
-			});
-			const data = await resp.json();
-			if (!data.success) {
-				alert(data.error || 'Cập nhật thất bại');
-			}
-		} catch (e) {
-			alert('Cập nhật thất bại');
-		}
-	}
-	// Modal removed
-	rows.forEach(row => {
-		const movieId = row.getAttribute('data-movie-id');
-		const titleInput = row.querySelector('.quick-title-input');
-		const catSelect = row.querySelector('.quick-category-select');
-		if (titleInput) {
-			const send = debounce(() => quickUpdate(movieId, { title: titleInput.value }), 500);
-			titleInput.addEventListener('change', send);
-			titleInput.addEventListener('input', send);
-		}
-		if (catSelect) {
-			catSelect.addEventListener('change', () => quickUpdate(movieId, { category_id: catSelect.value || null }));
-		}
-	});
+// Toggle dropdown menu
+function toggleMovieMenu(btn) {
+    const dropdown = btn.nextElementSibling;
+    const backdrop = document.getElementById('movieDropdownBackdrop');
+    const isOpen = dropdown.classList.contains('active');
+    
+    // Close all other dropdowns
+    closeAllDropdowns();
+    
+    if (!isOpen) {
+        dropdown.classList.add('active');
+        backdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeAllDropdowns() {
+    document.querySelectorAll('.movie-item-dropdown.active').forEach(d => d.classList.remove('active'));
+    document.getElementById('movieDropdownBackdrop').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.movie-item-actions') && !e.target.closest('.movie-item-dropdown')) {
+        closeAllDropdowns();
+    }
 });
+
+// Quick Edit Modal
+function openQuickEdit(movieId, title, categoryId) {
+    document.getElementById('quickEditMovieId').value = movieId;
+    document.getElementById('quickEditTitle').value = title;
+    document.getElementById('quickEditCategory').value = categoryId || '';
+    document.getElementById('quickEditModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Close dropdown
+    closeAllDropdowns();
+}
+
+function closeQuickEdit() {
+    document.getElementById('quickEditModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+async function saveQuickEdit() {
+    const movieId = document.getElementById('quickEditMovieId').value;
+    const title = document.getElementById('quickEditTitle').value;
+    const categoryId = document.getElementById('quickEditCategory').value;
+    
+    try {
+        const resp = await fetch(`{{ url_for('admin_quick_update_movie', movie_id=0) }}`.replace('0', movieId), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, category_id: categoryId || null })
+        });
+        const data = await resp.json();
+        if (data.success) {
+            closeQuickEdit();
+            location.reload();
+        } else {
+            alert(data.error || 'Cập nhật thất bại');
+        }
+    } catch (e) {
+        alert('Cập nhật thất bại');
+    }
+}
+
+// Desktop quick update
+document.addEventListener('DOMContentLoaded', () => {
+    function debounce(fn, t=400) {
+        let id; return (...args) => { clearTimeout(id); id = setTimeout(() => fn(...args), t); };
+    }
+    async function quickUpdate(movieId, payload) {
+        try {
+            const resp = await fetch(`{{ url_for('admin_quick_update_movie', movie_id=0) }}`.replace('0', String(movieId)), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await resp.json();
+            if (!data.success) alert(data.error || 'Cập nhật thất bại');
+        } catch (e) {
+            alert('Cập nhật thất bại');
+        }
+    }
+    
+    document.querySelectorAll('tr[data-movie-id]').forEach(row => {
+        const movieId = row.getAttribute('data-movie-id');
+        const titleInput = row.querySelector('.quick-title-input');
+        const catSelect = row.querySelector('.quick-category-select');
+        if (titleInput) {
+            const send = debounce(() => quickUpdate(movieId, { title: titleInput.value }), 500);
+            titleInput.addEventListener('change', send);
+            titleInput.addEventListener('input', send);
+        }
+        if (catSelect) {
+            catSelect.addEventListener('change', () => quickUpdate(movieId, { category_id: catSelect.value || null }));
+        }
+    });
+    
+    // Live Search functionality
+    const searchInput = document.getElementById('movieSearchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchClear = document.getElementById('searchClear');
+    const movieItems = document.querySelectorAll('.movie-item');
+    const tableRows = document.querySelectorAll('tr[data-movie-id]');
+    
+    // All movies data for search
+    const moviesData = [
+        {% for movie in movies %}
+        {
+            id: {{ movie.id }},
+            title: "{{ movie.title | e }}",
+            category: "{{ movie.category.name if movie.category else 'Chưa phân loại' }}",
+            poster: "{{ movie.poster_url or 'https://via.placeholder.com/40x60?text=No' }}",
+            url_key: "{{ movie.url_key or movie.slug or movie.id }}",
+            views: {{ movie.views }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    function searchMovies(query) {
+        query = query.toLowerCase().trim();
+        if (!query) {
+            searchResults.innerHTML = '';
+            searchResults.classList.remove('active');
+            // Show all items
+            movieItems.forEach(item => item.style.display = '');
+            tableRows.forEach(row => row.style.display = '');
+            searchClear.style.display = 'none';
+            return;
+        }
+        
+        searchClear.style.display = 'flex';
+        
+        const matches = moviesData.filter(m => 
+            m.title.toLowerCase().includes(query) || 
+            m.category.toLowerCase().includes(query)
+        );
+        
+        // Filter movie items (mobile)
+        movieItems.forEach(item => {
+            const movieId = parseInt(item.dataset.movieId);
+            const isMatch = matches.some(m => m.id === movieId);
+            item.style.display = isMatch ? '' : 'none';
+        });
+        
+        // Filter table rows (desktop)
+        tableRows.forEach(row => {
+            const movieId = parseInt(row.dataset.movieId);
+            const isMatch = matches.some(m => m.id === movieId);
+            row.style.display = isMatch ? '' : 'none';
+        });
+        
+        // Show dropdown results
+        if (matches.length > 0 && matches.length <= 10) {
+            searchResults.innerHTML = matches.map(m => `
+                <a href="{{ url_for('admin_edit_movie', movie_id=0) }}".replace('0', m.id) class="search-result-item">
+                    <img src="${m.poster}" alt="${m.title}">
+                    <div class="search-result-info">
+                        <div class="search-result-title">${m.title}</div>
+                        <div class="search-result-meta">${m.category} • ${m.views} lượt xem</div>
+                    </div>
+                </a>
+            `).join('');
+            searchResults.classList.add('active');
+        } else if (matches.length > 10) {
+            searchResults.innerHTML = `<div class="search-result-count">Tìm thấy ${matches.length} phim</div>`;
+            searchResults.classList.add('active');
+        } else {
+            searchResults.innerHTML = '<div class="search-result-empty">Không tìm thấy phim nào</div>';
+            searchResults.classList.add('active');
+        }
+    }
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(() => searchMovies(searchInput.value), 200));
+        searchInput.addEventListener('focus', () => {
+            if (searchInput.value.trim()) {
+                searchResults.classList.add('active');
+            }
+        });
+    }
+    
+    if (searchClear) {
+        searchClear.addEventListener('click', () => {
+            searchInput.value = '';
+            searchMovies('');
+            searchInput.focus();
+        });
+    }
+    
+    // Close search results when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.admin-search-box')) {
+            searchResults.classList.remove('active');
+        }
+    });
+});
+
+// Drag and Drop Reorder functionality
+let sortModeEnabled = false;
+let orderChanged = false;
+let draggedElement = null;
+
+function toggleSortMode() {
+    sortModeEnabled = !sortModeEnabled;
+    const toggleBtn = document.getElementById('toggleSortBtn');
+    const saveBtn = document.getElementById('saveOrderBtn');
+    const handleCols = document.querySelectorAll('.drag-handle-col, .drag-handle-cell');
+    const mobileHandles = document.querySelectorAll('.mobile-drag-handle');
+    const tableRows = document.querySelectorAll('#moviesTableBody tr[data-movie-id]');
+    const mobileItems = document.querySelectorAll('#mobileMovieList .movie-item');
+    
+    if (sortModeEnabled) {
+        toggleBtn.classList.add('active');
+        toggleBtn.innerHTML = '<i class="fas fa-times"></i> Hủy sắp xếp';
+        handleCols.forEach(el => el.style.display = '');
+        mobileHandles.forEach(el => el.style.display = 'flex');
+        tableRows.forEach(row => row.setAttribute('draggable', 'true'));
+        mobileItems.forEach(item => item.setAttribute('draggable', 'true'));
+        document.body.classList.add('sort-mode-active');
+    } else {
+        toggleBtn.classList.remove('active');
+        toggleBtn.innerHTML = '<i class="fas fa-sort"></i> Sắp xếp';
+        handleCols.forEach(el => el.style.display = 'none');
+        mobileHandles.forEach(el => el.style.display = 'none');
+        tableRows.forEach(row => row.setAttribute('draggable', 'false'));
+        mobileItems.forEach(item => item.setAttribute('draggable', 'false'));
+        document.body.classList.remove('sort-mode-active');
+        if (!orderChanged) {
+            saveBtn.style.display = 'none';
+        }
+    }
+}
+
+function initDragAndDrop() {
+    // Desktop table drag and drop
+    const tableBody = document.getElementById('moviesTableBody');
+    if (tableBody) {
+        tableBody.addEventListener('dragstart', handleDragStart);
+        tableBody.addEventListener('dragover', handleDragOver);
+        tableBody.addEventListener('drop', handleDrop);
+        tableBody.addEventListener('dragend', handleDragEnd);
+    }
+    
+    // Mobile list drag and drop
+    const mobileList = document.getElementById('mobileMovieList');
+    if (mobileList) {
+        mobileList.addEventListener('dragstart', handleDragStart);
+        mobileList.addEventListener('dragover', handleDragOver);
+        mobileList.addEventListener('drop', handleDrop);
+        mobileList.addEventListener('dragend', handleDragEnd);
+        
+        // Touch support for mobile
+        let touchStartY = 0;
+        let touchedElement = null;
+        
+        mobileList.addEventListener('touchstart', (e) => {
+            if (!sortModeEnabled) return;
+            const handle = e.target.closest('.mobile-drag-handle');
+            if (!handle) return;
+            
+            touchedElement = handle.closest('.movie-item');
+            touchStartY = e.touches[0].clientY;
+            touchedElement.classList.add('dragging');
+        }, { passive: true });
+        
+        mobileList.addEventListener('touchmove', (e) => {
+            if (!touchedElement || !sortModeEnabled) return;
+            e.preventDefault();
+            
+            const touchY = e.touches[0].clientY;
+            const items = [...mobileList.querySelectorAll('.movie-item:not(.dragging)')];
+            
+            for (const item of items) {
+                const rect = item.getBoundingClientRect();
+                const midY = rect.top + rect.height / 2;
+                
+                if (touchY < midY) {
+                    mobileList.insertBefore(touchedElement, item);
+                    orderChanged = true;
+                    document.getElementById('saveOrderBtn').style.display = 'inline-flex';
+                    break;
+                } else if (item === items[items.length - 1]) {
+                    mobileList.appendChild(touchedElement);
+                    orderChanged = true;
+                    document.getElementById('saveOrderBtn').style.display = 'inline-flex';
+                }
+            }
+        }, { passive: false });
+        
+        mobileList.addEventListener('touchend', () => {
+            if (touchedElement) {
+                touchedElement.classList.remove('dragging');
+                touchedElement = null;
+            }
+        });
+    }
+}
+
+function handleDragStart(e) {
+    if (!sortModeEnabled) {
+        e.preventDefault();
+        return;
+    }
+    draggedElement = e.target.closest('[data-movie-id]');
+    if (!draggedElement) return;
+    
+    draggedElement.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', draggedElement.dataset.movieId);
+}
+
+function handleDragOver(e) {
+    if (!sortModeEnabled || !draggedElement) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    
+    const target = e.target.closest('[data-movie-id]');
+    if (!target || target === draggedElement) return;
+    
+    const container = target.parentElement;
+    const rect = target.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    
+    if (e.clientY < midY) {
+        container.insertBefore(draggedElement, target);
+    } else {
+        container.insertBefore(draggedElement, target.nextSibling);
+    }
+}
+
+function handleDrop(e) {
+    if (!sortModeEnabled) return;
+    e.preventDefault();
+    orderChanged = true;
+    document.getElementById('saveOrderBtn').style.display = 'inline-flex';
+}
+
+function handleDragEnd(e) {
+    if (draggedElement) {
+        draggedElement.classList.remove('dragging');
+        draggedElement = null;
+    }
+}
+
+async function saveOrder() {
+    const saveBtn = document.getElementById('saveOrderBtn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+    
+    // Get order from both table and mobile list (use whichever is visible)
+    let movieIds = [];
+    const tableBody = document.getElementById('moviesTableBody');
+    const mobileList = document.getElementById('mobileMovieList');
+    
+    // Use table if visible (desktop), otherwise use mobile list
+    if (window.innerWidth >= 769 && tableBody) {
+        movieIds = [...tableBody.querySelectorAll('tr[data-movie-id]')]
+            .map(row => parseInt(row.dataset.movieId));
+    } else if (mobileList) {
+        movieIds = [...mobileList.querySelectorAll('.movie-item[data-movie-id]')]
+            .map(item => parseInt(item.dataset.movieId));
+    }
+    
+    try {
+        const resp = await fetch('{{ url_for("admin_reorder_movies") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ movie_ids: movieIds })
+        });
+        const data = await resp.json();
+        
+        if (data.success) {
+            orderChanged = false;
+            saveBtn.style.display = 'none';
+            toggleSortMode(); // Exit sort mode
+            
+            // Show success message
+            const msg = document.createElement('div');
+            msg.className = 'save-success-toast';
+            msg.innerHTML = '<i class="fas fa-check"></i> Đã lưu thứ tự thành công!';
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 3000);
+        } else {
+            alert(data.error || 'Lưu thứ tự thất bại');
+        }
+    } catch (e) {
+        alert('Lưu thứ tự thất bại');
+    }
+    
+    saveBtn.disabled = false;
+    saveBtn.innerHTML = '<i class="fas fa-save"></i> Lưu thứ tự';
+}
+
+// Sync order between desktop and mobile when window resizes
+function syncOrder() {
+    const tableBody = document.getElementById('moviesTableBody');
+    const mobileList = document.getElementById('mobileMovieList');
+    
+    if (!tableBody || !mobileList) return;
+    
+    // Get order from table
+    const order = [...tableBody.querySelectorAll('tr[data-movie-id]')]
+        .map(row => row.dataset.movieId);
+    
+    // Reorder mobile list to match
+    order.forEach(id => {
+        const item = mobileList.querySelector(`.movie-item[data-movie-id="${id}"]`);
+        if (item) mobileList.appendChild(item);
+    });
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', initDragAndDrop);
 </script>
+
+<style>
+/* Drag and Drop Styles */
+.drag-handle-col { width: 40px; }
+.drag-handle-cell { text-align: center; }
+.drag-handle { 
+    color: #666; 
+    cursor: grab; 
+    font-size: 16px;
+    padding: 8px;
+}
+.drag-handle:hover { color: #e50914; }
+
+.mobile-drag-handle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-width: 32px;
+    color: #666;
+    cursor: grab;
+    font-size: 18px;
+    margin-right: 8px;
+}
+.mobile-drag-handle:active { cursor: grabbing; }
+
+[draggable="true"] { cursor: grab; }
+[draggable="true"]:active { cursor: grabbing; }
+
+.dragging {
+    opacity: 0.5;
+    background: #2a2a2a !important;
+}
+
+.sort-mode-active #moviesTableBody tr:hover,
+.sort-mode-active .movie-item:hover {
+    background: rgba(229, 9, 20, 0.1);
+}
+
+#toggleSortBtn.active {
+    background: #e50914;
+    color: white;
+}
+
+#saveOrderBtn {
+    background: #28a745;
+    color: white;
+    animation: pulse 1s infinite;
+}
+#saveOrderBtn:hover {
+    background: #218838;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(40, 167, 69, 0); }
+}
+
+.save-success-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #28a745;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 9999;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* Mobile sort mode */
+.sort-mode-active .movie-item {
+    display: flex;
+    align-items: center;
+}
+.sort-mode-active .movie-item-main {
+    flex: 1;
+}
+</style>
 {% endblock %}
 

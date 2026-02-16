@@ -162,7 +162,7 @@
                         {% for history in watch_history %}
                         {% if history.movie %}
                         <div class="history-card">
-                            <a href="{{ url_for('movie', movie_id=history.movie.id) }}">
+                            <a href="{{ url_for('movie', url_key=history.movie.url_key or history.movie.slug or history.movie.id) }}">
                                 <div class="history-poster">
                                     <img src="{{ history.movie.poster_url or 'https://via.placeholder.com/200x300?text=No+Image' }}" alt="{{ history.movie.title }}" loading="lazy">
                                     <div class="history-overlay">

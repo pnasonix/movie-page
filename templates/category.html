@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}{{ category.name }} - gporn.me{% endblock %}
+{% block title %}{{ category.name }} - NGAY THER{% endblock %}
 
 {% block content %}
 <div class="container">
@@ -13,7 +13,7 @@
     <div class="movie-grid">
         {% for movie in movies %}
         <div class="movie-card">
-            <a href="{{ url_for('movie', movie_id=movie.id) }}">
+            <a href="{{ url_for('movie', url_key=movie.url_key or movie.slug or movie.id) }}">
                 <div class="movie-poster">
                     <img src="{{ movie.poster_url or 'https://via.placeholder.com/300x450?text=No+Image' }}" alt="{{ movie.title }}">
                     <div class="movie-overlay">

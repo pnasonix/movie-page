@@ -3,140 +3,611 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Admin Panel{% endblock %} - gporn.me</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=54.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <title>{% block title %}Admin Panel{% endblock %} - NGAY THER</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.ico') }}?v=3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=56.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}?v=6.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .admin-sidebar {
+            width: 260px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border-color);
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s ease;
+        }
+        
+        .admin-sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-primary);
+        }
+        
+        .admin-sidebar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .admin-sidebar-menu {
+            padding: 1rem 0;
+        }
+        
+        .admin-menu-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .admin-menu-title {
+            padding: 0.5rem 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+        
+        .admin-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            font-size: 1rem;
+        }
+        
+        .admin-menu-item:hover {
+            background: var(--bg-hover);
+            border-left-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .admin-menu-item.active {
+            background: var(--bg-hover);
+            border-left-color: var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .admin-menu-item i {
+            width: 20px;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        
+        .admin-main {
+            flex: 1;
+            margin-left: 260px;
+            min-height: 100vh;
+            background: var(--bg-primary);
+        }
+        
+        .admin-header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+        
+        .admin-header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .admin-header-title {
+            margin: 0;
+            font-size: 1.8rem;
+            color: var(--text-color);
+        }
+        
+        .admin-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .admin-user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-hover);
+            border-radius: 50px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .admin-user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .admin-user-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .admin-user-name {
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .admin-content {
+            padding: 2rem;
+            font-size: 1rem;
+        }
+        
+        /* Mobile Menu Toggle - nút 3 gạch */
+        .admin-mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.3rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        
+        /* Mobile Search Toggle */
+        .admin-mobile-search-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+        }
+        
+        /* Mobile 3-dot Menu */
+        .admin-mobile-more-menu {
+            display: none;
+            position: relative;
+        }
+        
+        .admin-mobile-more-toggle {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 40px;
+            height: 40px;
+        }
+        
+        .admin-mobile-more-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            min-width: 180px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 2001;
+            overflow: hidden;
+        }
+        
+        .admin-mobile-more-dropdown.active {
+            display: block;
+        }
+        
+        .admin-mobile-more-user-info {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-hover);
+        }
+        
+        .admin-mobile-more-user-info strong {
+            color: var(--text-color);
+            font-size: 0.9rem;
+        }
+        
+        .admin-mobile-more-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+        
+        .admin-mobile-more-item:hover {
+            background: var(--bg-hover);
+        }
+        
+        .admin-mobile-more-item i {
+            width: 16px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        /* Mobile Search Box */
+        .admin-mobile-search {
+            display: none;
+            padding: 1rem;
+            background-color: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 1002;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            width: 100%;
+        }
+        
+        .admin-mobile-search.active {
+            display: block;
+        }
+        
+        .admin-mobile-search-form {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        .admin-mobile-search-input-wrapper {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .admin-mobile-search-input {
+            width: 100%;
+            padding: 0.75rem 2.5rem 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            font-size: 16px;
+        }
+        
+        .admin-mobile-search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .admin-mobile-search-icon-btn {
+            position: absolute;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        
+        .admin-mobile-search-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+        
+        @media (max-width: 900px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+                z-index: 2000;
+            }
+            
+            .admin-sidebar.active {
+                transform: translateX(0);
+            }
+            
+            .admin-main {
+                margin-left: 0;
+            }
+            
+            .admin-mobile-menu-toggle {
+                display: flex;
+            }
+            
+            .admin-mobile-search-toggle {
+                display: flex;
+            }
+            
+            .admin-mobile-more-menu {
+                display: block;
+            }
+            
+            .admin-header {
+                padding: 0.75rem 1rem;
+                position: relative;
+            }
+            
+            .admin-header-title {
+                font-size: 1.2rem !important;
+                flex: 1;
+                text-align: center;
+            }
+            
+            .admin-header-actions {
+                gap: 0.25rem;
+            }
+            
+            /* Desktop user info ẩn trên mobile */
+            .admin-user-info {
+                display: none;
+            }
+            
+            .admin-content {
+                padding: 1rem;
+            }
+            
+            /* Ẩn phần Hệ thống trong sidebar trên mobile */
+            .admin-menu-section.system-section {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .admin-header {
+                padding: 0.5rem 0.75rem;
+            }
+            
+            .admin-header-title {
+                font-size: 1rem !important;
+            }
+            
+            .admin-content {
+                padding: 0.75rem;
+            }
+        }
+        
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1999;
+        }
+        
+        .sidebar-overlay.active {
+            display: block;
+        }
+    </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="container">
-            <!-- Mobile menu button -->
-            <button class="mobile-menu-toggle" id="mobileMenuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-
-            <!-- Brand (bên trái) -->
-            <div class="nav-brand">
-                <a href="{{ url_for('index') }}">
-                    <i class="fas fa-film"></i> XemPhim
+    <div class="admin-layout">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar" id="adminSidebar">
+            <div class="admin-sidebar-header">
+                <a href="{{ url_for('index') }}" class="admin-sidebar-brand">
+                    NGAY THER
                 </a>
             </div>
-
-            <!-- Desktop Navigation (giữa) -->
-            <div class="nav-menu-desktop">
-                <a href="{{ url_for('index') }}" class="nav-link">
-                    <i class="fas fa-home"></i> Trang chủ
-                </a>
-                <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="{{ url_for('admin_movies') }}" class="nav-link">
-                    <i class="fas fa-video"></i> Phim
-                </a>
-                <a href="{{ url_for('admin_categories') }}" class="nav-link">
-                    <i class="fas fa-tags"></i> Thể loại
-                </a>
-                <a href="{{ url_for('admin_users') }}" class="nav-link">
-                    <i class="fas fa-users"></i> Người dùng
-                </a>
-            </div>
-
-            <!-- Right side: User menu -->
-            <div class="nav-right">
-                <div class="user-menu">
-                    <div class="user-avatar" id="userAvatar">
-                        <i class="fas fa-user-circle"></i>
-                    </div>
-                    <div class="user-dropdown" id="userDropdown">
-                        <div class="user-info">
-                            <strong>{{ current_user.username }}</strong>
-                            <span class="user-badge">Admin</span>
+            
+            <nav class="admin-sidebar-menu">
+                <div class="admin-menu-section">
+                    <div class="admin-menu-title">Quản trị</div>
+                    <a href="{{ url_for('admin_dashboard') }}" class="admin-menu-item {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ url_for('admin_movies') }}" class="admin-menu-item {% if 'movie' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-video"></i>
+                        <span>Phim</span>
+                    </a>
+                    <a href="{{ url_for('admin_categories') }}" class="admin-menu-item {% if 'categor' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-tags"></i>
+                        <span>Thể loại</span>
+                    </a>
+                    <a href="{{ url_for('admin_franchises') }}" class="admin-menu-item {% if 'franchise' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-layer-group"></i>
+                        <span>Series phim</span>
+                    </a>
+                    <a href="{{ url_for('admin_users') }}" class="admin-menu-item {% if 'user' in request.endpoint %}active{% endif %}">
+                        <i class="fas fa-users"></i>
+                        <span>Người dùng</span>
+                    </a>
+                </div>
+                
+                <!-- Phần Hệ thống - chỉ hiển thị trên desktop -->
+                <div class="admin-menu-section system-section">
+                    <div class="admin-menu-title">Hệ thống</div>
+                    <a href="{{ url_for('index') }}" class="admin-menu-item">
+                        <i class="fas fa-home"></i>
+                        <span>Về trang chủ</span>
+                    </a>
+                    <a href="{{ url_for('profile') }}" class="admin-menu-item">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Hồ sơ</span>
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="admin-menu-item">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Đăng xuất</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="admin-main">
+            <header class="admin-header">
+                <div class="admin-header-left">
+                    <!-- Mobile menu button (nút 3 gạch) -->
+                    <button class="admin-mobile-menu-toggle" id="adminMobileMenuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    
+                    <h1 class="admin-header-title">{% block page_title %}Admin Panel{% endblock %}</h1>
+                </div>
+                
+                <div class="admin-header-actions">
+                    <!-- Mobile 3-dot menu (hệ thống) -->
+                    <div class="admin-mobile-more-menu" id="adminMobileMoreMenu">
+                        <button class="admin-mobile-more-toggle" id="adminMobileMoreToggle">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="admin-mobile-more-dropdown" id="adminMobileMoreDropdown">
+                            <div class="admin-mobile-more-user-info">
+                                <strong>{{ current_user.username }}</strong>
+                                <span class="user-badge" style="margin-left: 0.5rem; background: var(--primary-color); color: #000; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem;">Admin</span>
+                            </div>
+                            <a href="{{ url_for('index') }}" class="admin-mobile-more-item">
+                                <i class="fas fa-home"></i> Về trang chủ
+                            </a>
+                            <a href="{{ url_for('profile') }}" class="admin-mobile-more-item">
+                                <i class="fas fa-user-cog"></i> Hồ sơ
+                            </a>
+                            <a href="{{ url_for('logout') }}" class="admin-mobile-more-item">
+                                <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                            </a>
                         </div>
-                        <a href="{{ url_for('profile') }}" class="dropdown-item">
-                            <i class="fas fa-user"></i> Hồ sơ
-                        </a>
-                        <a href="{{ url_for('logout') }}" class="dropdown-item">
-                            <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                        </a>
+                    </div>
+                    
+                    <!-- Desktop user info -->
+                    <div class="admin-user-info">
+                        <div class="admin-user-avatar">
+                            {% if current_user.avatar_url %}
+                            <img src="{{ current_user.avatar_url }}" alt="{{ current_user.username }}">
+                            {% else %}
+                            <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                        <span class="admin-user-name">{{ current_user.username }}</span>
                     </div>
                 </div>
+            </header>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages" style="padding: 1rem 2rem;">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-{{ category }}" style="padding: 1rem; margin-bottom: 1rem; border-radius: 8px; background: {% if category == 'success' %}#d4edda{% elif category == 'error' %}#f8d7da{% else %}#d1ecf1{% endif %}; color: {% if category == 'success' %}#155724{% elif category == 'error' %}#721c24{% else %}#0c5460{% endif %};">
+                                <span>{{ message }}</span>
+                                <button onclick="this.parentElement.remove()" style="float: right; background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <div class="admin-content">
+                {% block content %}{% endblock %}
             </div>
-        </div>
-
-        <!-- Mobile search box -->
-        <div class="mobile-search" id="mobileSearch" style="display: none !important;">
-        </div>
-    </nav>
-
-    <!-- Mobile sidebar -->
-    <div class="mobile-sidebar" id="mobileSidebar">
-        <div class="sidebar-header">
-            <h3>Menu Admin</h3>
-            <button class="sidebar-close" id="sidebarClose">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="sidebar-content">
-            <a href="{{ url_for('index') }}" class="sidebar-item">
-                <i class="fas fa-home"></i> Trang chủ
-            </a>
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <i class="fas fa-cog"></i> Admin
-                </div>
-                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-item">
-                    <i class="fas fa-tachometer-alt"></i> Dashboard
-                </a>
-                <a href="{{ url_for('admin_movies') }}" class="sidebar-item">
-                    <i class="fas fa-video"></i> Phim
-                </a>
-                <a href="{{ url_for('admin_categories') }}" class="sidebar-item">
-                    <i class="fas fa-tags"></i> Thể loại
-                </a>
-                <a href="{{ url_for('admin_users') }}" class="sidebar-item">
-                    <i class="fas fa-users"></i> Người dùng
-                </a>
-            </div>
-            <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <i class="fas fa-user"></i> Tài khoản
-                </div>
-                <a href="{{ url_for('profile') }}" class="sidebar-item">
-                    <i class="fas fa-user"></i> Hồ sơ
-                </a>
-                <a href="{{ url_for('logout') }}" class="sidebar-item">
-                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                </a>
-            </div>
-        </div>
+        </main>
     </div>
+    
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-messages">
-                {% for category, message in messages %}
-                    <div class="flash-message flash-{{ category }}">
-                        <span>{{ message }}</span>
-                        <button onclick="this.parentElement.remove()">&times;</button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
-
-    <main class="main-content admin-content">
-        <div class="container">
-            <div class="admin-header">
-                <h1>{% block page_title %}Admin Panel{% endblock %}</h1>
-            </div>
-            {% block content %}{% endblock %}
-        </div>
-    </main>
-
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    <script>
+        // Admin Mobile menu toggle (nút 3 gạch - mở sidebar quản trị)
+        const adminMobileMenuToggle = document.getElementById('adminMobileMenuToggle');
+        const adminSidebar = document.getElementById('adminSidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        
+        if (adminMobileMenuToggle) {
+            adminMobileMenuToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                adminSidebar.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+            });
+        }
+        
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => {
+                adminSidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+            });
+        }
+        
+        // Admin Mobile 3-dot More Menu Toggle
+        const adminMobileMoreToggle = document.getElementById('adminMobileMoreToggle');
+        const adminMobileMoreDropdown = document.getElementById('adminMobileMoreDropdown');
+        
+        if (adminMobileMoreToggle) {
+            adminMobileMoreToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                adminMobileMoreDropdown.classList.toggle('active');
+            });
+        }
+        
+        // Close more dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (adminMobileMoreDropdown && !adminMobileMoreDropdown.contains(e.target) && !adminMobileMoreToggle.contains(e.target)) {
+                adminMobileMoreDropdown.classList.remove('active');
+            }
+        });
+        
+        // Auto-hide flash messages after 3 seconds
+        document.querySelectorAll('.flash-message').forEach(function(message) {
+            setTimeout(function() {
+                message.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                message.style.opacity = '0';
+                message.style.transform = 'translateX(100%)';
+                setTimeout(function() {
+                    message.remove();
+                }, 500);
+            }, 3000);
+        });
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>
-

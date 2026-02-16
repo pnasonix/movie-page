@@ -1,0 +1,77 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Quản lý Series Phim{% endblock %}
+{% block page_title %}Quản lý Series Phim (Các phần){% endblock %}
+
+{% block content %}
+<div class="admin-actions">
+    <form method="POST" action="{{ url_for('admin_add_franchise') }}" class="inline-form">
+        <div class="form-row">
+            <input type="text" name="name" placeholder="Tên series (VD: Maze Runner)" required>
+            <input type="text" name="description" placeholder="Mô tả (không bắt buộc)">
+            <input type="url" name="poster_url" placeholder="Poster URL (không bắt buộc)">
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Thêm series
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="admin-section">
+    <p class="admin-hint">
+        <i class="fas fa-info-circle"></i> 
+        <strong>Series phim</strong> dùng để nhóm các phần phim liên quan với nhau (VD: Maze Runner 1, 2, 3 hoặc Avengers 1, 2, 3, 4).
+        Khi xem phim, tab "Các phần" sẽ hiển thị các phim khác trong cùng series.
+    </p>
+    
+    <div class="admin-table-wrapper">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Tên Series</th>
+                    <th>Mô tả</th>
+                    <th>Số phim</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for franchise in franchises %}
+                <tr>
+                    <td>{{ franchise.id }}</td>
+                    <td>
+                        <strong>{{ franchise.name }}</strong>
+                        {% if franchise.poster_url %}
+                        <br><small class="text-muted"><i class="fas fa-image"></i> Có poster</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ franchise.description or '-' }}</td>
+                    <td>
+                        <span class="badge">{{ franchise.movies|length }} phim</span>
+                        {% if franchise.movies %}
+                        <br><small class="text-muted">
+                            {% for m in franchise.movies[:3] %}{{ m.title }}{% if not loop.last %}, {% endif %}{% endfor %}
+                            {% if franchise.movies|length > 3 %}...{% endif %}
+                        </small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin_delete_franchise', franchise_id=franchise.id) }}" 
+                              style="display: inline;" 
+                              onsubmit="return confirm('Bạn có chắc muốn xóa series này? Các phim trong series sẽ trở thành phim độc lập.');">
+                            <button type="submit" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i> Xóa
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="text-center">Chưa có series nào. Hãy thêm series để nhóm các phần phim liên quan.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

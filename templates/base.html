@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}pnasonix{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.ico') }}?v=3">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ css_version }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% block extra_css %}{% endblock %}
 </head>
 <body>
     <nav class="navbar">
@@ -23,7 +25,7 @@
             <!-- Brand (bên trái) -->
             <div class="nav-brand">
                 <a href="{{ url_for('index') }}">
-					gporn.me
+                    <span class="brand-ngay">NGAY</span> <span class="brand-ther">THER</span>
                 </a>
             </div>
 
@@ -36,11 +38,12 @@
                 <!-- Search box (desktop) -->
                 <div class="nav-search-desktop">
                     <form action="{{ url_for('search') }}" method="GET" class="search-form">
-                        <input type="text" name="q" placeholder="Tìm kiếm phim..." value="{{ request.args.get('q', '') }}" class="search-input">
+                        <input type="text" name="q" placeholder="Tìm kiếm phim..." value="{{ request.args.get('q', '') }}" class="search-input" id="desktopSearchInput" autocomplete="off">
                         <button type="submit" class="search-button">
                             <i class="fas fa-search"></i>
                         </button>
                     </form>
+                    <div class="desktop-search-results" id="desktopSearchResults"></div>
                 </div>
 
                 <!-- Mobile search icon -->
@@ -48,7 +51,45 @@
                     <i class="fas fa-search"></i>
                 </button>
 
-                <!-- User menu (nếu đã đăng nhập) -->
+                <!-- Mobile 3-dot menu -->
+                <div class="mobile-more-menu" id="mobileMoreMenu">
+                    <button class="mobile-more-toggle" id="mobileMoreToggle">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="mobile-more-dropdown" id="mobileMoreDropdown">
+                        {% if current_user.is_authenticated %}
+                        <div class="mobile-more-user-info">
+                            <strong>{{ current_user.username }}</strong>
+                            {% if current_user.is_admin %}
+                            <span class="user-badge">Admin</span>
+                            {% endif %}
+                        </div>
+                        <a href="{{ url_for('profile') }}" class="mobile-more-item">
+                            <i class="fas fa-user"></i> Hồ sơ
+                        </a>
+                        <a href="{{ url_for('favorites') }}" class="mobile-more-item">
+                            <i class="fas fa-heart"></i> Yêu thích
+                        </a>
+                        {% if current_user.is_admin %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="mobile-more-item">
+                            <i class="fas fa-cog"></i> Admin
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('logout') }}" class="mobile-more-item">
+                            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('login') }}" class="mobile-more-item">
+                            <i class="fas fa-sign-in-alt"></i> Đăng nhập
+                        </a>
+                        <a href="{{ url_for('register') }}" class="mobile-more-item">
+                            <i class="fas fa-user-plus"></i> Đăng ký
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- User menu (nếu đã đăng nhập) - Desktop only -->
                 {% if current_user.is_authenticated %}
                 <div class="user-menu">
                     <div class="user-avatar" id="userAvatar">
@@ -99,53 +140,40 @@
         <!-- Mobile search box -->
         <div class="mobile-search" id="mobileSearch">
             <form action="{{ url_for('search') }}" method="GET" class="mobile-search-form">
-                <input type="text" name="q" placeholder="Tìm kiếm phim..." value="{{ request.args.get('q', '') }}" class="mobile-search-input">
-                <button type="submit" class="mobile-search-button">
-                    <i class="fas fa-search"></i>
+                <div class="mobile-search-input-wrapper">
+                    <input type="text" name="q" placeholder="Tìm kiếm phim..." value="{{ request.args.get('q', '') }}" class="mobile-search-input" id="mobileSearchInput" autocomplete="off">
+                    <button type="submit" class="mobile-search-icon-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <button type="button" class="mobile-search-close" id="mobileSearchClose">
+                    <i class="fas fa-times"></i>
                 </button>
             </form>
+            <div class="mobile-search-results" id="mobileSearchResults"></div>
         </div>
     </nav>
 
-    <!-- Mobile sidebar -->
+    <!-- Mobile sidebar - Categories -->
     <div class="mobile-sidebar" id="mobileSidebar">
         <div class="sidebar-header">
+            <span class="sidebar-title">Danh mục</span>
             <button class="sidebar-close" id="sidebarClose">
                 <i class="fas fa-times"></i>
             </button>
         </div>
         <div class="sidebar-content">
-            <a href="{{ url_for('index') }}" class="sidebar-item {% if request.endpoint == 'index' and (not request.args.get('filter') or request.args.get('filter') == 'all') %}active{% endif %}">
-                <i class="fas fa-home"></i> Trang chủ
-            </a>
-            {% if current_user.is_authenticated %}
+            {% if categories %}
             <div class="sidebar-section">
-                <div class="sidebar-section-title">
-                    <i class="fas fa-user"></i> Tài khoản
-                </div>
-                <a href="{{ url_for('profile') }}" class="sidebar-item">
-                    <i class="fas fa-user"></i> Hồ sơ
+                {% for cat in categories %}
+                <a href="{{ url_for('category', category_id=cat.id) }}" class="sidebar-item {% if request.endpoint == 'category' and request.view_args and request.view_args.get('category_id') == cat.id %}active{% endif %}">
+                    {{ cat.name }}
                 </a>
-                <a href="{{ url_for('favorites') }}" class="sidebar-item">
-                    <i class="fas fa-heart"></i> Video đã thích
-                </a>
-                {% if current_user.is_admin %}
-                <a href="{{ url_for('admin_dashboard') }}" class="sidebar-item">
-                    <i class="fas fa-cog"></i> Admin
-                    </a>
-                {% endif %}
-                <a href="{{ url_for('logout') }}" class="sidebar-item">
-                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
-                </a>
+                {% endfor %}
             </div>
             {% else %}
             <div class="sidebar-section">
-                <a href="{{ url_for('login') }}" class="sidebar-item">
-                    <i class="fas fa-sign-in-alt"></i> Đăng nhập
-                </a>
-                <a href="{{ url_for('register') }}" class="sidebar-item">
-                    <i class="fas fa-user-plus"></i> Đăng ký
-                </a>
+                <div class="sidebar-item disabled">Chưa có thể loại</div>
             </div>
             {% endif %}
         </div>
@@ -170,9 +198,9 @@
         <div class="sidebar-content-wrapper">
             <nav class="sidebar-nav">
                 {% if categories %}
-                    {% for category in categories %}
-					<a href="{{ url_for('category_movies', category_id=category.id) }}" class="sidebar-nav-item {% if request.endpoint == 'category_movies' and request.view_args and request.view_args.get('category_id') == category.id %}active{% endif %}" title="{{ category.name }}">
-                        <span class="sidebar-nav-text">{{ category.name }}</span>
+                    {% for cat in categories %}
+					<a href="{{ url_for('category', category_id=cat.id) }}" class="sidebar-nav-item {% if request.endpoint == 'category' and request.view_args and request.view_args.get('category_id') == cat.id %}active{% endif %}" title="{{ cat.name }}">
+                        <span class="sidebar-nav-text">{{ cat.name }}</span>
                     </a>
                     {% endfor %}
                 {% else %}

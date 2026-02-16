@@ -14,25 +14,104 @@
         </div>
 
         <div class="form-group">
+            <label for="subtitle">
+                <i class="fas fa-language"></i> Tiêu đề phụ (Tên tiếng Anh)
+            </label>
+            <input type="text" id="subtitle" name="subtitle" value="{{ movie.subtitle or '' }}" placeholder="VD: The Shawshank Redemption">
+            <small>Tiêu đề phụ sẽ hiển thị dưới poster và có thể search được</small>
+        </div>
+
+        <div class="form-group">
             <label for="description">
                 <i class="fas fa-align-left"></i> Mô tả
             </label>
             <textarea id="description" name="description" rows="5">{{ movie.description or '' }}</textarea>
         </div>
 
-        <div class="form-row">
+        <div class="form-group">
+            <label for="category_id">
+                <i class="fas fa-tag"></i> Thể loại
+            </label>
+            <select id="category_id" name="category_id">
+                <option value="">-- Chọn thể loại --</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}" {% if movie.category_id == category.id %}selected{% endif %}>
+                    {{ category.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Loại phim Section -->
+        <div class="form-section">
+            <h3><i class="fas fa-film"></i> Loại phim</h3>
+            
             <div class="form-group">
-                <label for="category_id">
-                    <i class="fas fa-tag"></i> Thể loại
-                </label>
-                <select id="category_id" name="category_id">
-                    <option value="">-- Chọn thể loại --</option>
-                    {% for category in categories %}
-                    <option value="{{ category.id }}" {% if movie.category_id == category.id %}selected{% endif %}>
-                        {{ category.name }}
-                    </option>
-                    {% endfor %}
+                <select id="movie_type" name="movie_type" onchange="toggleMovieTypeOptions()">
+                    <option value="" {% if not movie.is_series and not movie.series_id and not movie.franchise_id %}selected{% endif %}>Phim lẻ (không thuộc series/bộ nào)</option>
+                    <option value="tv_series" {% if movie.is_series or movie.series_id %}selected{% endif %}>Phim dài tập / Seasons (có nhiều episode)</option>
+                    <option value="franchise" {% if movie.franchise_id and not movie.is_series and not movie.series_id %}selected{% endif %}>Phim theo series, nhiều phần</option>
                 </select>
+                <small>Chọn loại phim để hiển thị đúng tab trên trang xem phim</small>
+            </div>
+            
+            <!-- Options cho Phim dài tập -->
+            <div id="tvSeriesOptions" style="display: {% if movie.is_series or movie.series_id %}block{% else %}none{% endif %};">
+                <div class="form-group">
+                    <label for="is_series">
+                        <i class="fas fa-tv"></i> Vai trò
+                    </label>
+                    <select id="is_series" name="is_series" onchange="toggleEpisodeOptions()">
+                        <option value="1" {% if movie.is_series %}selected{% endif %}>Đây là phim bộ chính (container)</option>
+                        <option value="0" {% if not movie.is_series %}selected{% endif %}>Đây là một tập của phim bộ</option>
+                    </select>
+                </div>
+                
+                <div id="episodeOptions" style="display: {% if not movie.is_series %}block{% else %}none{% endif %};">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="series_id">
+                                <i class="fas fa-link"></i> Thuộc phim bộ
+                            </label>
+                            <select id="series_id" name="series_id">
+                                <option value="">-- Chọn phim bộ --</option>
+                                {% for series in all_series %}
+                                <option value="{{ series.id }}" {% if movie.series_id == series.id %}selected{% endif %}>
+                                    {{ series.title }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <small>Chọn phim bộ chứa tập này</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="episode_number">
+                                <i class="fas fa-sort-numeric-up"></i> Số tập
+                            </label>
+                            <input type="number" id="episode_number" name="episode_number" min="1" 
+                                   value="{{ movie.episode_number or '' }}" placeholder="1">
+                            <small>Nhập số thứ tự tập (1, 2, 3...)</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Options cho Phim theo series -->
+            <div id="franchiseOptions" style="display: {% if movie.franchise_id and not movie.is_series and not movie.series_id %}block{% else %}none{% endif %};">
+                <div class="form-group">
+                    <label for="franchise_id">
+                        <i class="fas fa-layer-group"></i> Thuộc series phim
+                    </label>
+                    <select id="franchise_id" name="franchise_id">
+                        <option value="">-- Chọn series --</option>
+                        {% for franchise in all_franchises %}
+                        <option value="{{ franchise.id }}" {% if movie.franchise_id == franchise.id %}selected{% endif %}>
+                            {{ franchise.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small>VD: Maze Runner 1, 2, 3... cùng thuộc series "Maze Runner"</small>
+                </div>
             </div>
         </div>
 
@@ -73,6 +152,30 @@
             <small>Chấp nhận: JPG, PNG, GIF</small>
         </div>
 
+        <div class="form-group">
+            <label for="subtitle_url">
+                <i class="fas fa-closed-captioning"></i> Subtitle URL (Phụ đề)
+            </label>
+            <input type="url" id="subtitle_url" name="subtitle_url" 
+                   value="{% if movie.subtitle_url and movie.subtitle_url.startswith('http') %}{{ movie.subtitle_url }}{% endif %}"
+                   placeholder="https://example.com/subtitle.vtt">
+            <small>Hoặc upload file phụ đề mới bên dưới (sẽ thay thế URL hiện tại). Để trống nếu muốn giữ phụ đề hiện tại.</small>
+            {% if movie.subtitle_url %}
+            <div class="current-subtitle" style="margin-top: 10px;">
+                <i class="fas fa-check-circle" style="color: #28a745;"></i>
+                <span>Đã có phụ đề: {{ movie.subtitle_url }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="subtitle">
+                <i class="fas fa-upload"></i> Upload Phụ đề Mới
+            </label>
+            <input type="file" id="subtitle" name="subtitle" accept=".vtt,.srt">
+            <small>Chấp nhận: VTT, SRT (khuyến nghị dùng định dạng .vtt)</small>
+        </div>
+
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-save"></i> Cập nhật phim
@@ -83,5 +186,36 @@
         </div>
     </form>
 </div>
+
+<script>
+function toggleMovieTypeOptions() {
+    const movieType = document.getElementById('movie_type').value;
+    const tvSeriesOptions = document.getElementById('tvSeriesOptions');
+    const franchiseOptions = document.getElementById('franchiseOptions');
+    const isSeriesField = document.getElementById('is_series');
+    
+    // Hide all options first
+    tvSeriesOptions.style.display = 'none';
+    franchiseOptions.style.display = 'none';
+    
+    // Reset values when switching
+    if (movieType !== 'tv_series') {
+        document.getElementById('series_id').value = '';
+        document.getElementById('episode_number').value = '';
+        isSeriesField.value = '0';
+    }
+    if (movieType !== 'franchise') {
+        document.getElementById('franchise_id').value = '';
+    }
+    
+    // Show relevant options
+    if (movieType === 'tv_series') {
+        tvSeriesOptions.style.display = 'block';
+        isSeriesField.value = '0'; // This is an episode
+    } else if (movieType === 'franchise') {
+        franchiseOptions.style.display = 'block';
+    }
+}
+</script>
 {% endblock %}
 
